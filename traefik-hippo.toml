@@ -1,0 +1,13 @@
+[entryPoints]
+  [entryPoints.hippo]
+    address = "localhost:8080"
+
+[http.routers]
+  [http.routers.hippo]
+    rule = "Host(`cms-dev.universiteitleiden.nl,www-dev.universiteitleiden.nl,www-dev.student.universiteitleiden.nl,www-dev.medewerkers.universiteitleiden.nl,www-dev.staff.universiteitleiden.nl,www-dev.organisatiegids.universiteitleiden.nl,www-dev.bibliotheek.universiteitleiden.nl,www-dev.library.universiteitleiden.nl`)"
+    service = "hippo"
+
+[http.services]
+  [http.services.hippo.loadBalancer]
+    [[http.services.hippo.loadBalancer.servers]]
+      url = "http://localhost:8080/site"

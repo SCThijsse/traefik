@@ -1,0 +1,21 @@
+---
+version: '3.7'
+services:
+  traefik:
+    image: traefik:2.0
+    restart: always
+    container_name: treafik
+    network_mode: host
+    command: >
+      --api.insecure=true
+      --entrypoints.web.address=:80
+      --providers.docker
+      --providers.docker.exposedbydefault=false
+      --providers.file.filename=traefik-hippo.toml
+    ports:
+      - 80:80
+      - 443:443
+      - 8888:8080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik-hippo.toml:/traefik-hippo.toml
