@@ -1,13 +1,71 @@
-[entryPoints]
-  [entryPoints.hippo]
-    address = "localhost:8080"
+# vim: set syntax=toml
+
+[http.middlewares]
+  [http.middlewares.gzip-compress.compress]
+
+  [http.middlewares.add-site.addPrefix]
+    prefix = "/site"
+
+  [http.middlewares.add-cms.addPrefix]
+    prefix = "/cms"
+
+  [http.middlewares.strip-cms.stripPrefix]
+    prefixes = ["/cms"]
 
 [http.routers]
-  [http.routers.hippo]
-    rule = "Host(`cms-dev.universiteitleiden.nl,www-dev.universiteitleiden.nl,www-dev.student.universiteitleiden.nl,www-dev.medewerkers.universiteitleiden.nl,www-dev.staff.universiteitleiden.nl,www-dev.organisatiegids.universiteitleiden.nl,www-dev.bibliotheek.universiteitleiden.nl,www-dev.library.universiteitleiden.nl`)"
-    service = "hippo"
+  [http.routers.hippo-site]
+    entrypoints = ["web", "web-secure"]
+    rule = "HostRegexp(`.universiteitleiden.nl`, `{subdomain:www-dev(\\..*)?.universiteitleiden.nl}`) && PathPrefix(`/`)"
+    middlewares = ["add-site", "gzip-compress"]
+    service = "hippo-site"
+    [http.routers.hippo-site.tls]
+      options = "default"
+
+  [http.routers.hippo-cms-site]
+    entrypoints = ["web", "web-secure"]
+    rule = "HostRegexp(`.universiteitleiden.nl`, `{subdomain:cms-dev(\\..*)?.universiteitleiden.nl}`) && PathPrefix(`/site/`)"
+    service = "hippo-site"
+    middlewares = ["gzip-compress"]
+    [http.routers.hippo-cms-site.tls]
+      options = "default"
+
+  [http.routers.hippo-cms]
+    entrypoints = ["web", "web-secure"]
+    rule = "HostRegexp(`.universiteitleiden.nl`, `{subdomain:cms-dev(\\..*)?.universiteitleiden.nl}`) && PathPrefix(`/`)"
+    middlewares = ["add-cms", "gzip-compress"]
+    service = "hippo-cms"
+    [http.routers.hippo-cms.tls]
+      options = "default"
 
 [http.services]
-  [http.services.hippo.loadBalancer]
-    [[http.services.hippo.loadBalancer.servers]]
-      url = "http://localhost:8080/site"
+  [http.services.hippo-site.loadBalancer]
+    [http.services.hippo-site.loadBalancer.sticky.cookie]
+      name = "ROUTEID"
+      secure = false
+      httpOnly = false
+    [[http.services.hippo-site.loadBalancer.servers]]
+      url = "http://hippo:8080/site/"
+
+  [http.services.hippo-cms.loadBalancer]
+    [http.services.hippo-cms.loadBalancer.sticky.cookie]
+      name = "ROUTEID"
+      secure = false
+      httpOnly = false
+    [[http.services.hippo-cms.loadBalancer.servers]]
+      url = "http://hippo:8080/cms/"
+
+[tls]
+  [[tls.cerfificates]]
+    certFile = "/run/secrets/server.crt"
+    keyFile = "/run/secrets/server.key"
+
+  [tls.options]
+    [tls.options.default]
+     minVersion = "VersionTLS12"
+     sniStrict = false
+
+  [tls.stores]
+    [tls.stores.default]
+      [tls.stores.default.defaultCertificate]
+        certFile = "/run/secrets/server.crt"
+        keyFile = "/run/secrets/server.key"

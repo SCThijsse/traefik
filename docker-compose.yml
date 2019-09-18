@@ -3,19 +3,30 @@ version: '3.7'
 services:
   traefik:
     image: traefik:2.0
-    restart: always
-    container_name: treafik
-    network_mode: host
+    extra_hosts:
+      - hippo:172.20.123.1
     command: >
       --api.insecure=true
       --entrypoints.web.address=:80
+      --entrypoints.web-secure.address=:443
       --providers.docker
+      --providers.docker.swarmMode=true
+      --providers.docker.endpoint="tcp://127.0.0.1:2375"
       --providers.docker.exposedbydefault=false
       --providers.file.filename=traefik-hippo.toml
     ports:
       - 80:80
       - 443:443
       - 8888:8080
+    secrets:
+      - server.crt
+      - server.key
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik-hippo.toml:/traefik-hippo.toml
+
+secrets:
+  server.crt:
+    external: true
+  server.key:
+    external: true
